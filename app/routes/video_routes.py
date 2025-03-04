@@ -15,6 +15,8 @@ def create_video(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Invalid token") 
     user_id=current_user.id
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

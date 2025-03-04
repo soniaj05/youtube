@@ -6,11 +6,14 @@ from app.models.chat import *
 from app.services.ai_chat import generate_answer
 from app.models.video import *
 import time
-
+from app.auth import get_current_user
+from app.models.user import *
 router = APIRouter()
 
 @router.post("/ask/")
-def ask_question(request: question, db: Session = Depends(get_db)):
+def ask_question(request: question, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Invalid token") 
     video = db.query(Video).filter(Video.url == request.url).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -24,7 +27,7 @@ def ask_question(request: question, db: Session = Depends(get_db)):
             return {"question": request.question, "answer": "Video transcription is not yet completed. Please try again later."}
     answer = generate_answer(request.question, video.transcribed)
     chat_entry = ChatHistory(
-        user_id=video.user_id,
+        user_id=current_user.id,
         url=video.url,
         question=request.question,
         answer=answer,
